@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="tabs" aria-label="Navigation">
+  <a class="tab" href="#patient">Patient Entry</a>
+  <a class="tab" href="#vitals">Vitals Entry</a>
+  <a class="tab" href="#rx">Prescription</a>
+  <a class="tab" href="{{ url_for('export_csv') }}">Export CSV</a>
+</nav>
+
+<section id="patient">
+  <h2>Patient Entry</h2>
+  <form method="post" action="{{ url_for('patient_create') }}">
+    <div class="row grid-2">
+      <div>
+        <label>USN</label>
+        <input name="usn" required />
+      </div>
+      <div>
+        <label>Full Name</label>
+        <input name="full_name" required />
+      </div>
+    </div>
+    <div class="row grid-3">
+      <div>
+        <label>Age</label>
+        <input name="age" type="number" min="1" required />
+      </div>
+      <div>
+        <label>Gender</label>
+        <select name="gender">
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label>Contact</label>
+        <input name="contact" required />
+      </div>
+    </div>
+    <div>
+      <label>Address</label>
+      <input name="address" required />
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" type="submit">Save Patient</button>
+    </div>
+  </form>
+
+  <div class="card">
+    <h3>Patients ({{ patients|length }})</h3>
+    <div class="list">
+      {% for p in patients %}
+      <div>
+        <div>
+          <div><strong>{{ p.full_name }}</strong></div>
+          <div class="muted">USN: {{ p.usn }} • Contact: {{ p.contact }}</div>
+        </div>
+        <form method="post" action="{{ url_for('patient_delete', usn=p.usn) }}" onsubmit="return confirm('Delete patient and all linked records?')">
+          <button class="btn" type="button" onclick="fillEdit('{{ p.usn|e }}','{{ p.full_name|e }}','{{ p.age }}','{{ p.gender|e }}','{{ p.contact|e }}','{{ p.address|e }}')">Edit</button>
+          <button class="btn" type="submit">Delete</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form id="edit-form" method="post" action="{{ url_for('patient_update') }}" style="display:none;">
+    <h3>Edit Patient</h3>
+    <div class="row grid-2">
+      <div>
+        <label>USN (locked)</label>
+        <input id="e_usn" name="usn" readonly />
+      </div>
+      <div>
+        <label>Full Name</label>
+        <input id="e_full_name" name="full_name" required />
+      </div>
+    </div>
+    <div class="row grid-3">
+      <div>
+        <label>Age</label>
+        <input id="e_age" name="age" type="number" min="1" required />
+      </div>
+      <div>
+        <label>Gender</label>
+        <select id="e_gender" name="gender">
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label>Contact</label>
+        <input id="e_contact" name="contact" required />
+      </div>
+    </div>
+    <div>
+      <label>Address</label>
+      <input id="e_address" name="address" required />
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" type="submit">Update</button>
+      <button class="btn" type="button" onclick="this.closest('form').style.display='none'">Cancel</button>
+    </div>
+  </form>
+</section>
+
+<section id="vitals">
+  <h2>Vitals Entry</h2>
+  <form method="get" action="/">
+    <label>Quick Search (USN or Phone)</label>
+    <div class="row grid-2">
+      <input name="q" value="{{ q }}" placeholder="1AB20CS001 or 9876543210" />
+      <button class="btn" type="submit">Find</button>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('vitals_create') }}">
+    <div class="row grid-3">
+      <div>
+        <label>USN</label>
+        <input name="usn" value="{{ match_patient.usn if match_patient }}" required />
+      </div>
+      <div>
+        <label>Blood Pressure</label>
+        <input name="blood_pressure" placeholder="120/80" required />
+      </div>
+      <div>
+        <label>Pulse</label>
+        <input name="pulse" type="number" min="1" required />
+      </div>
+    </div>
+    <div class="row grid-3">
+      <div>
+        <label>Temperature (°F)</label>
+        <input name="temperature" type="number" step="0.1" min="1" required />
+      </div>
+      <div>
+        <label>Weight (kg)</label>
+        <input name="weight" type="number" step="0.1" min="1" required />
+      </div>
+      <div>
+        <label>Height (cm)</label>
+        <input name="height" type="number" step="0.1" min="1" required />
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" type="submit">Save Vitals</button>
+    </div>
+  </form>
+
+  {% if match_patient %}
+  <div class="card">
+    <h3>Latest Vitals for {{ match_patient.full_name }}</h3>
+    {% if patient_vitals %}
+      <div class="muted">Most recent recorded at {{ patient_vitals[0].recorded_at }}</div>
+      <div>BP: {{ patient_vitals[0].blood_pressure }}, Pulse: {{ patient_vitals[0].pulse }}, Temp: {{ patient_vitals[0].temperature }}, Weight: {{ patient_vitals[0].weight }}, Height: {{ patient_vitals[0].height }}</div>
+    {% else %}
+      <div class="muted">No vitals recorded yet.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<section id="rx">
+  <h2>Prescription</h2>
+  <form method="get" action="/">
+    <label>Quick Search (USN or Phone)</label>
+    <div class="row grid-2">
+      <input name="q" value="{{ q }}" placeholder="1AB20CS001 or 9876543210" />
+      <button class="btn" type="submit">Find</button>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('prescription_create') }}">
+    <div class="row grid-2">
+      <div>
+        <label>USN</label>
+        <input name="usn" value="{{ match_patient.usn if match_patient }}" required />
+      </div>
+      <div>
+        <label>Prescription Notes</label>
+        <textarea name="notes" rows="4" required></textarea>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-primary" type="submit">Save Prescription</button>
+    </div>
+  </form>
+
+  {% if match_patient %}
+  <div class="card">
+    <h3>Prescriptions for {{ match_patient.full_name }}</h3>
+    {% if patient_rx %}
+      <ul>
+        {% for r in patient_rx %}
+          <li>
+            <strong>{{ r.prescribed_at }}</strong> — {{ r.notes }}
+            [<a href="{{ url_for('prescription_print', pid=r.id) }}" target="_blank">Print</a>]
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="muted">No prescriptions yet.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<script>
+  function fillEdit(usn, full_name, age, gender, contact, address){
+    const f = document.getElementById('edit-form');
+    f.style.display = 'block';
+    document.getElementById('e_usn').value = usn;
+    document.getElementById('e_full_name').value = full_name;
+    document.getElementById('e_age').value = age;
+    document.getElementById('e_gender').value = gender;
+    document.getElementById('e_contact').value = contact;
+    document.getElementById('e_address').value = address;
+    f.scrollIntoView({behavior:'smooth'});
+  }
+</script>
+{% endblock %}

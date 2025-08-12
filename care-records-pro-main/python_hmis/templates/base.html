@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HMIS (Flask)</title>
+  <style>
+    :root{--primary:#2563eb; --bg:#f9fafb; --text:#0f172a;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"}
+    .container{max-width:1000px;margin:0 auto;padding:24px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#111827;text-decoration:none}
+    .tab:hover{border-color:#cbd5e1}
+    h1{font-size:28px;margin:0 0 12px}
+    h2{font-size:18px;margin:16px 0 8px}
+    form{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:12px 0}
+    label{display:block;font-size:12px;color:#475569;margin-bottom:4px}
+    input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:8px}
+    .row{display:grid;gap:12px}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    .btns{display:flex;gap:8px;margin-top:8px}
+    .btn{padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#111827;text-decoration:none;display:inline-block}
+    .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .muted{color:#64748b}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+    .list>div{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e5e7eb;padding:8px 0}
+    .alert{padding:10px;border-radius:8px;margin:10px 0}
+    .alert-ok{background:#ecfdf5;color:#065f46}
+    .alert-err{background:#fef2f2;color:#991b1b}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Hospital Management Information System (Python)</h1>
+      <p class="muted">SQLite + Flask • CSV export • Edit/Delete • Search by USN or Phone</p>
+    </header>
+
+    {% if message %}<div class="alert alert-ok">{{ message }}</div>{% endif %}
+    {% if error %}<div class="alert alert-err">{{ error }}</div>{% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

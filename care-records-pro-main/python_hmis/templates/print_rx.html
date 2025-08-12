@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prescription</title>
+  <style>
+    body{font-family: system-ui, -apple-system; padding:24px}
+    .box{border:1px solid #e5e7eb; border-radius:8px; padding:16px}
+    h1{font-size:20px;margin:0 0 8px}
+    h2{font-size:16px;margin:16px 0 8px}
+    .muted{color:#64748b}
+  </style>
+</head>
+<body onload="window.print()">
+  <h1>Hospital Management Information System</h1>
+  {% if patient %}
+  <div class="box">
+    <h2>Patient</h2>
+    <div><strong>USN:</strong> {{ patient.usn }}</div>
+    <div><strong>Name:</strong> {{ patient.full_name }}</div>
+  </div>
+  {% endif %}
+
+  <h2>Prescription</h2>
+  <div class="box">
+    <div class="muted">Printed at {{ (now or '') }}</div>
+    <pre style="white-space: pre-wrap">{{ rx.notes }}</pre>
+    <div class="muted">Prescribed at {{ rx.prescribed_at }}</div>
+  </div>
+</body>
+</html>
