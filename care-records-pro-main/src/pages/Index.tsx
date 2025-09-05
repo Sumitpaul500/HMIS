@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -9,29 +10,48 @@ import EnhancedPatientSearch from "@/components/hmis/EnhancedPatientSearch";
 import EnhancedVitalsForm from "@/components/hmis/EnhancedVitalsForm";
 import EnhancedPrescriptionForm from "@/components/hmis/EnhancedPrescriptionForm";
 import SearchAndExport from "@/components/hmis/SearchAndExport";
+import LanguageSelector from "@/components/ui/LanguageSelector";
+import OfflineIndicator from "@/components/ui/OfflineIndicator";
 import { loadFromStorage, saveToStorage } from "@/utils/storage";
+import { offlineManager } from "@/utils/offlineManager";
 
 const Index = () => {
+  const { t } = useTranslation();
   const [patients, setPatients] = useState<Patient[]>(() => loadFromStorage("patients", [] as Patient[]));
   const [vitals, setVitals] = useState<Vitals[]>(() => loadFromStorage("vitals", [] as Vitals[]));
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(() => loadFromStorage("prescriptions", [] as Prescription[]));
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [pendingChanges, setPendingChanges] = useState(0);
+  const [lastSync, setLastSync] = useState<string | null>(null);
 
-  // Check API connection status
+  // Check API connection status and pending changes
   useEffect(() => {
     const checkConnection = async () => {
       try {
         const response = await fetch('/api/health');
         setConnectionStatus(response.ok ? 'connected' : 'disconnected');
+        if (response.ok) {
+          setLastSync(new Date().toISOString());
+        }
       } catch {
         setConnectionStatus('disconnected');
       }
     };
 
+    const updatePendingChanges = async () => {
+      const changes = await offlineManager.getPendingChanges();
+      setPendingChanges(changes.length);
+    };
+
     checkConnection();
-    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
+    updatePendingChanges();
+    
+    const interval = setInterval(() => {
+      checkConnection();
+      updatePendingChanges();
+    }, 30000); // Check every 30 seconds
     
     return () => clearInterval(interval);
   }, []);
@@ -79,6 +99,17 @@ const Index = () => {
     setActiveTab("patient");
   };
 
+  const handleSync = async () => {
+    try {
+      const result = await offlineManager.syncPendingChanges();
+      console.log(`Sync completed: ${result.success} successful, ${result.failed} failed`);
+      setPendingChanges(0);
+      setLastSync(new Date().toISOString());
+    } catch (error) {
+      console.error('Sync failed:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       {/* Header */}
@@ -87,32 +118,26 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Hospital Management Information System
+                {t('header.title')}
               </h1>
               <p className="mt-2 text-muted-foreground">
-                Advanced patient care management with real-time data synchronization
+                {t('header.subtitle')}
               </p>
             </div>
             
-            {/* Connection Status */}
+            {/* Controls */}
             <div className="flex items-center gap-3">
-              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                connectionStatus === 'connected' ? 'bg-green-100 text-green-800' :
-                connectionStatus === 'disconnected' ? 'bg-red-100 text-red-800' :
-                'bg-yellow-100 text-yellow-800'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  connectionStatus === 'connected' ? 'bg-green-500' :
-                  connectionStatus === 'disconnected' ? 'bg-red-500' :
-                  'bg-yellow-500'
-                }`} />
-                {connectionStatus === 'connected' ? 'Online' : 
-                 connectionStatus === 'disconnected' ? 'Offline' : 'Checking...'}
-              </div>
+              <LanguageSelector />
+              
+              <OfflineIndicator 
+                onSync={handleSync}
+                lastSync={lastSync}
+                pendingChanges={pendingChanges}
+              />
               
               {selectedPatient && (
                 <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-accent rounded-full text-sm">
-                  <span>Selected:</span>
+                  <span>{t('header.selected')}:</span>
                   <span className="font-medium">{selectedPatient.fullName}</span>
                 </div>
               )}
@@ -123,22 +148,14 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto max-w-7xl px-4 py-6">
-        {connectionStatus === 'disconnected' && (
-          <Alert className="mb-6">
-            <AlertDescription>
-              <strong>Offline Mode:</strong> Working with local data. Changes will sync when connection is restored.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-6">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="search">Search</TabsTrigger>
-            <TabsTrigger value="patient">Patients</TabsTrigger>
-            <TabsTrigger value="vitals">Vitals</TabsTrigger>
-            <TabsTrigger value="prescription">Prescriptions</TabsTrigger>
-            <TabsTrigger value="export">Export</TabsTrigger>
+            <TabsTrigger value="dashboard">{t('navigation.dashboard')}</TabsTrigger>
+            <TabsTrigger value="search">{t('navigation.search')}</TabsTrigger>
+            <TabsTrigger value="patient">{t('navigation.patients')}</TabsTrigger>
+            <TabsTrigger value="vitals">{t('navigation.vitals')}</TabsTrigger>
+            <TabsTrigger value="prescription">{t('navigation.prescriptions')}</TabsTrigger>
+            <TabsTrigger value="export">{t('navigation.export')}</TabsTrigger>
           </TabsList>
 
           {/* Enhanced Dashboard */}

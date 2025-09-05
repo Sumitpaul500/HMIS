@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Patient, Vitals, Prescription } from "@/types/hmis";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ interface HealthMetrics {
 }
 
 export default function Dashboard({ patients, vitals, prescriptions, onPatientSelect }: Props) {
+  const { t } = useTranslation();
   // Calculate health metrics
   const healthMetrics: HealthMetrics = useMemo(() => {
     const recentVitals = vitals.filter(v => {
