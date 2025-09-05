@@ -13,6 +13,26 @@ DB_PATH = os.path.join(APP_DIR, "hmis.db")
 
 app = Flask(__name__)
 
+# Enable very simple CORS for local development (Vite dev server default port is 8080)
+@app.after_request
+def add_cors_headers(response: Response) -> Response:
+    origin = request.headers.get("Origin", "")
+    if origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:"):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = request.headers.get(
+            "Access-Control-Request-Headers", "Content-Type, Authorization"
+        )
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return response
+
+# Handle CORS preflight requests
+@app.route('/api/<path:any_path>', methods=['OPTIONS'])
+def cors_preflight(any_path: str) -> Response:
+    resp = Response(status=204)
+    return add_cors_headers(resp)
+
 # --- Database helpers ---
 
 def get_db() -> sqlite3.Connection:
@@ -219,9 +239,9 @@ def init_db() -> None:
         cur.executemany(
             "INSERT INTO lab_tests(code, name, specimen, unit, ref_range) VALUES(?,?,?,?,?)",
             [
-                ("CBC", "Complete Blood Count", "Blood", NULL, NULL),
+                ("CBC", "Complete Blood Count", "Blood", "NULL", "NULL"),
                 ("GLU", "Blood Glucose (Fasting)", "Blood", "mg/dL", "70-100"),
-                ("LFT", "Liver Function Test", "Blood", NULL, NULL),
+                ("LFT", "Liver Function Test", "Blood", "NULL", "NULL"),
             ],
         )
 

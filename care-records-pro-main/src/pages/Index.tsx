@@ -23,7 +23,7 @@ const Index = () => {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const response = await fetch('http://localhost:5000/health');
+        const response = await fetch('/api/health');
         setConnectionStatus(response.ok ? 'connected' : 'disconnected');
       } catch {
         setConnectionStatus('disconnected');
